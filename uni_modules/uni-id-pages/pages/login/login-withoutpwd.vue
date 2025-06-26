@@ -102,52 +102,114 @@
 						if (res.confirm) {
 							uni.getUserProfile({
 								desc: '用于完善用户资料',
-								success: (userInfo) => {
-									this.updateUserInfoToDb(userInfo.userInfo)
+								success: (userInfoRes) => {
+									// 输出获取的用户信息
+									console.log("获取到的微信用户信息: ", JSON.stringify(userInfoRes.userInfo));
+									// 确保获取的用户信息包含头像URL
+									if (userInfoRes.userInfo && userInfoRes.userInfo.avatarUrl) {
+										this.updateUserInfoToDb(userInfoRes.userInfo)
+									} else {
+										console.error("获取的微信用户信息不包含头像URL");
+										this.loginSuccess();
+									}
 								},
-								fail: () => {
+								fail: (err) => {
+									console.error("获取微信用户信息失败:", err);
 									// 用户拒绝授权，仍然登录成功
-									this.loginSuccess()
+									this.loginSuccess();
 								}
-							})
+							});
 						} else {
 							// 用户拒绝授权，仍然登录成功
-							this.loginSuccess()
+							this.loginSuccess();
 						}
 					}
-				})
+				});
 				// #endif
 				
 				// #ifndef MP-WEIXIN
 				// 其他平台直接登录成功
-				this.loginSuccess()
+				this.loginSuccess();
 				// #endif
 			},
 			
 			// 更新用户信息到数据库
 			updateUserInfoToDb(userInfo) {
-				const uniIdCo = uniCloud.importObject("uni-id-co", {
-					customUI: true
-				})
+				console.log("准备更新用户信息到数据库，头像URL:", userInfo.avatarUrl);
 				
-				uniIdCo.updateUserInfo({
+				// 使用云函数直接操作数据库更新用户信息
+				const db = uniCloud.database();
+				
+				// 获取当前用户ID
+				const uid = uniCloud.getCurrentUserInfo().uid;
+				console.log("当前用户ID:", uid);
+				
+				if (!uid) {
+					console.error('用户未登录或登录已过期');
+					this.loginSuccess();
+					return;
+				}
+				
+				// 确保微信返回的头像URL有效（一般以https://开头）
+				if (!userInfo.avatarUrl || !userInfo.avatarUrl.startsWith('http')) {
+					console.error("无效的头像URL:", userInfo.avatarUrl);
+					this.loginSuccess();
+					return;
+				}
+				
+				// 准备avatar_file对象
+				const avatar_file = {
+					name: 'avatar_' + Date.now() + '.png',
+					extname: 'png',
+					url: userInfo.avatarUrl
+				};
+				
+				// 直接更新用户数据
+				console.log("更新数据:", {
 					nickname: userInfo.nickName,
-					avatar_file: {
-						url: userInfo.avatarUrl
-					}
+					avatar: userInfo.avatarUrl,
+					avatar_file: avatar_file,
+					gender: userInfo.gender
+				});
+				
+				db.collection('uni-id-users').doc(uid).update({
+					nickname: userInfo.nickName,
+					avatar: userInfo.avatarUrl,
+					avatar_file: avatar_file,
+					gender: userInfo.gender
 				}).then(() => {
-					// 更新本地存储的用户信息
-					mutations.updateUserInfo({
+					console.log("数据库更新成功");
+					
+					// 直接构造用户信息并存储到本地
+					let userInfoForStorage = {
+						_id: uid,
 						nickname: userInfo.nickName,
-						avatar_file: {
-							url: userInfo.avatarUrl
-						}
-					})
-					this.loginSuccess()
+						avatar: userInfo.avatarUrl,
+						avatar_file: avatar_file,
+						gender: userInfo.gender
+					};
+					
+					// 保存到本地存储
+					uni.setStorageSync('uni-id-pages-userInfo', userInfoForStorage);
+					console.log("保存到本地存储:", JSON.stringify(userInfoForStorage));
+					
+					// 确保store中也有正确的用户信息
+					store.userInfo = {...userInfoForStorage};
+					store.hasLogin = true;
+					
+					// 登录成功
+					uni.showToast({
+						title: '登录成功',
+						icon: 'success'
+					});
+					
+					setTimeout(() => {
+						this.loginSuccess();
+					}, 1500);
 				}).catch(e => {
-					console.error(e)
-					this.loginSuccess()
-				})
+					console.error('更新用户信息失败', e);
+					this.loginSuccess();
+				});
 			},
 			
 			// 登录成功

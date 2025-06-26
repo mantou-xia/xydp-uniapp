@@ -69,10 +69,17 @@ const _sfc_main = {
           if (res.confirm) {
             common_vendor.index.getUserProfile({
               desc: "用于完善用户资料",
-              success: (userInfo) => {
-                this.updateUserInfoToDb(userInfo.userInfo);
+              success: (userInfoRes) => {
+                common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:107", "获取到的微信用户信息: ", JSON.stringify(userInfoRes.userInfo));
+                if (userInfoRes.userInfo && userInfoRes.userInfo.avatarUrl) {
+                  this.updateUserInfoToDb(userInfoRes.userInfo);
+                } else {
+                  common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:112", "获取的微信用户信息不包含头像URL");
+                  this.loginSuccess();
+                }
               },
-              fail: () => {
+              fail: (err) => {
+                common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:117", "获取微信用户信息失败:", err);
                 this.loginSuccess();
               }
             });
@@ -84,24 +91,58 @@ const _sfc_main = {
     },
     // 更新用户信息到数据库
     updateUserInfoToDb(userInfo) {
-      const uniIdCo = common_vendor.nr.importObject("uni-id-co", {
-        customUI: true
-      });
-      uniIdCo.updateUserInfo({
-        nickname: userInfo.nickName,
-        avatar_file: {
-          url: userInfo.avatarUrl
-        }
-      }).then(() => {
-        uni_modules_uniIdPages_common_store.mutations.updateUserInfo({
-          nickname: userInfo.nickName,
-          avatar_file: {
-            url: userInfo.avatarUrl
-          }
-        });
+      common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:138", "准备更新用户信息到数据库，头像URL:", userInfo.avatarUrl);
+      const db = common_vendor.nr.database();
+      const uid = common_vendor.nr.getCurrentUserInfo().uid;
+      common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:145", "当前用户ID:", uid);
+      if (!uid) {
+        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:148", "用户未登录或登录已过期");
         this.loginSuccess();
+        return;
+      }
+      if (!userInfo.avatarUrl || !userInfo.avatarUrl.startsWith("http")) {
+        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:155", "无效的头像URL:", userInfo.avatarUrl);
+        this.loginSuccess();
+        return;
+      }
+      const avatar_file = {
+        name: "avatar_" + Date.now() + ".png",
+        extname: "png",
+        url: userInfo.avatarUrl
+      };
+      common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:168", "更新数据:", {
+        nickname: userInfo.nickName,
+        avatar: userInfo.avatarUrl,
+        avatar_file,
+        gender: userInfo.gender
+      });
+      db.collection("uni-id-users").doc(uid).update({
+        nickname: userInfo.nickName,
+        avatar: userInfo.avatarUrl,
+        avatar_file,
+        gender: userInfo.gender
+      }).then(() => {
+        common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:181", "数据库更新成功");
+        let userInfoForStorage = {
+          _id: uid,
+          nickname: userInfo.nickName,
+          avatar: userInfo.avatarUrl,
+          avatar_file,
+          gender: userInfo.gender
+        };
+        common_vendor.index.setStorageSync("uni-id-pages-userInfo", userInfoForStorage);
+        common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:194", "保存到本地存储:", JSON.stringify(userInfoForStorage));
+        uni_modules_uniIdPages_common_store.store.userInfo = { ...userInfoForStorage };
+        uni_modules_uniIdPages_common_store.store.hasLogin = true;
+        common_vendor.index.showToast({
+          title: "登录成功",
+          icon: "success"
+        });
+        setTimeout(() => {
+          this.loginSuccess();
+        }, 1500);
       }).catch((e) => {
-        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:148", e);
+        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/pages/login/login-withoutpwd.vue:210", "更新用户信息失败", e);
         this.loginSuccess();
       });
     },

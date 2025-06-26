@@ -32,15 +32,11 @@ const _sfc_main = {
   watch: {
     src: {
       handler(src) {
-        if (src && src.substring(0, 8) == "cloud://") {
-          common_vendor.nr.getTempFileURL({
-            fileList: [src]
-          }).then((res) => {
-            this.cSrc = res.fileList[0].tempFileURL;
-          });
-        } else {
-          this.cSrc = src;
+        if (!src) {
+          this.cSrc = "";
+          return;
         }
+        this.cSrc = src;
       },
       immediate: true
     }
@@ -56,6 +52,14 @@ const _sfc_main = {
     };
   }
 };
+if (!Array) {
+  const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");
+  _easycom_uni_icons2();
+}
+const _easycom_uni_icons = () => "../../../uni-icons/components/uni-icons/uni-icons.js";
+if (!Math) {
+  _easycom_uni_icons();
+}
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return common_vendor.e({
     a: $data.cSrc
@@ -64,10 +68,18 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     c: $props.height,
     d: $data.cSrc,
     e: $props.mode
-  } : {}, {
-    f: common_vendor.o((...args) => $options.onClick && $options.onClick(...args)),
+  } : {
+    f: common_vendor.p({
+      color: "#999999",
+      size: "30",
+      type: "person-filled"
+    }),
     g: $props.width,
     h: $props.height
+  }, {
+    i: common_vendor.o((...args) => $options.onClick && $options.onClick(...args)),
+    j: $props.width,
+    k: $props.height
   });
 }
 const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

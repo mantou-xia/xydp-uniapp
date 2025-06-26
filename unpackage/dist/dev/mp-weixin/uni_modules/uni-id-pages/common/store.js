@@ -13,6 +13,13 @@ const mutations = {
   // data不为空，表示传递要更新的值(注意不是覆盖是合并),什么也不传时，直接查库获取更新
   async updateUserInfo(data2 = false) {
     if (data2) {
+      if (data2.avatar && !data2.avatar_file) {
+        data2.avatar_file = {
+          name: "avatar.png",
+          extname: "png",
+          url: data2.avatar
+        };
+      }
       usersTable.where("_id==$env.uid").update(data2).then((e) => {
         if (e.result.updated) {
           common_vendor.index.showToast({
@@ -36,7 +43,7 @@ const mutations = {
         customUI: true
       });
       try {
-        let res = await usersTable.where("'_id' == $cloudEnv_uid").field("mobile,nickname,username,email,avatar_file").get();
+        let res = await usersTable.where("'_id' == $cloudEnv_uid").field("mobile,nickname,username,email,avatar,avatar_file").get();
         const realNameRes = await uniIdCo2.getRealNameInfo();
         this.setUserInfo({
           ...res.result.data[0],
@@ -44,15 +51,23 @@ const mutations = {
         });
       } catch (e) {
         this.setUserInfo({}, { cover: true });
-        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/common/store.js:60", e.message, e.errCode);
+        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/common/store.js:69", e.message, e.errCode);
       }
     }
   },
   setUserInfo(data2, { cover } = { cover: false }) {
-    let userInfo = cover ? data2 : Object.assign(store.userInfo, data2);
-    store.userInfo = Object.assign({}, userInfo);
-    store.hasLogin = Object.keys(store.userInfo).length != 0;
-    common_vendor.index.setStorageSync("uni-id-pages-userInfo", store.userInfo);
+    if (data2.avatar && !data2.avatar_file) {
+      common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/common/store.js:77", "自动从avatar创建avatar_file");
+      data2.avatar_file = {
+        name: "avatar-" + Date.now(),
+        extname: "png",
+        url: data2.avatar
+      };
+    }
+    let userInfo = cover ? data2 : Object.assign(exports.store.userInfo, data2);
+    exports.store.userInfo = Object.assign({}, userInfo);
+    exports.store.hasLogin = Object.keys(exports.store.userInfo).length != 0;
+    common_vendor.index.setStorageSync("uni-id-pages-userInfo", exports.store.userInfo);
     return data2;
   },
   async logout() {
@@ -60,7 +75,7 @@ const mutations = {
       try {
         await uniIdCo.logout();
       } catch (e) {
-        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/common/store.js:79", e);
+        common_vendor.index.__f__("error", "at uni_modules/uni-id-pages/common/store.js:98", e);
       }
     }
     common_vendor.index.removeStorageSync("uni_id_token");
@@ -87,7 +102,7 @@ const mutations = {
           common_vendor.index.switchTab({
             url: uniIdRedirectUrl,
             fail: (err2) => {
-              common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/common/store.js:108", err1, err2);
+              common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/common/store.js:127", err1, err2);
             }
           });
         }
@@ -124,7 +139,7 @@ const mutations = {
       return common_vendor.index.redirectTo({
         url: uniIdRedirectUrl ? `/uni_modules/uni-id-pages/pages/userinfo/set-pwd/set-pwd?uniIdRedirectUrl=${uniIdRedirectUrl}&loginType=${e.loginType}` : `/uni_modules/uni-id-pages/pages/userinfo/set-pwd/set-pwd?loginType=${e.loginType}`,
         fail: (err) => {
-          common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/common/store.js:153", err);
+          common_vendor.index.__f__("log", "at uni_modules/uni-id-pages/common/store.js:172", err);
         }
       });
     }
@@ -133,7 +148,7 @@ const mutations = {
     }
   }
 };
-const store = common_vendor.reactive(data);
+exports.store = void 0;
+exports.store = common_vendor.reactive(data);
 exports.mutations = mutations;
-exports.store = store;
 //# sourceMappingURL=../../../../.sourcemap/mp-weixin/uni_modules/uni-id-pages/common/store.js.map

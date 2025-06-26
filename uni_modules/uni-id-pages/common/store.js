@@ -17,6 +17,15 @@ export const mutations = {
 	// data不为空，表示传递要更新的值(注意不是覆盖是合并),什么也不传时，直接查库获取更新
 	async updateUserInfo(data = false) {
 		if (data) {
+			// 检查是否有avatar字段但没有avatar_file字段，如果是则自动添加avatar_file
+			if (data.avatar && !data.avatar_file) {
+				data.avatar_file = {
+					name: 'avatar.png',
+					extname: 'png',
+					url: data.avatar
+				};
+			}
+			
 			usersTable.where('_id==$env.uid').update(data).then(e => {
 				// console.log(e);
 				if (e.result.updated) {
@@ -45,7 +54,7 @@ export const mutations = {
 			})
 			try {
 				let res = await usersTable.where("'_id' == $cloudEnv_uid")
-					.field('mobile,nickname,username,email,avatar_file')
+					.field('mobile,nickname,username,email,avatar,avatar_file')
 					.get()
 
 				const realNameRes = await uniIdCo.getRealNameInfo()
@@ -63,6 +72,16 @@ export const mutations = {
 	},
 	setUserInfo(data, {cover}={cover:false}) {
 		// console.log('set-userInfo', data);
+		// 确保avatar_file字段始终有值
+		if(data.avatar && !data.avatar_file) {
+			console.log("自动从avatar创建avatar_file");
+			data.avatar_file = {
+				name: 'avatar-' + Date.now(),
+				extname: 'png',
+				url: data.avatar
+			}
+		}
+		
 		let userInfo = cover?data:Object.assign(store.userInfo,data)
 		store.userInfo = Object.assign({},userInfo)
 		store.hasLogin = Object.keys(store.userInfo).length != 0
@@ -162,10 +181,13 @@ export const mutations = {
 
 }
 
+// 先声明一个变量而不初始化
+let store;
+
 // #ifdef VUE2
 import Vue from 'vue'
 // 通过Vue.observable创建一个可响应的对象
-export const store = Vue.observable(data)
+store = Vue.observable(data)
 // #endif
 
 // #ifdef VUE3
@@ -173,5 +195,7 @@ import {
 	reactive
 } from 'vue'
 // 通过Vue.observable创建一个可响应的对象
-export const store = reactive(data)
+store = reactive(data)
 // #endif
+
+export { store }

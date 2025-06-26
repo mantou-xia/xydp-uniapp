@@ -1,0 +1,41 @@
+{
+	"passwordSecret": "845617487yijiekeji18114376180123",
+	"tokenSecret": "845617487yijiekeji18114376180123",
+	"tokenExpiresIn": 7200,
+	"passwordErrorLimit": 6,
+	"passwordErrorRetryTime": 3600,
+	"app": {
+		"tokenExpiresIn": 2592000,
+		"oauth": {
+			"weixin": {
+				"appid": "wx7a4b7ce9d77f466a",
+				"appsecret": "25cd855f01c52bb92a7835b075dcc762"
+			}
+		}
+	},
+	"mp-weixin": {
+		"oauth": {
+			"weixin": {
+				"appid": "wx7a4b7ce9d77f466a",
+				"appsecret": "25cd855f01c52bb92a7835b075dcc762"
+			}
+		}
+	},
+	"h5": {
+		"oauth": {
+			"weixin": {
+				"appid": "wx7a4b7ce9d77f466a",
+				"appsecret": "25cd855f01c52bb92a7835b075dcc762"
+			}
+		}
+	},
+	"service": {
+		"payment": {
+			"weixin": {
+				"appid": "wx7a4b7ce9d77f466a",
+				"mchid": "1718166801",
+				"partnerKey": "845617487yijiekeji18114376180123"
+			}
+		}
+	}
+} 

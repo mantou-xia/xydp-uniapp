@@ -1,6 +1,9 @@
 <template>
 	<view @click="onClick" :style="{width,height}" style="justify-content: center;">
 		<image v-if="cSrc" :style="{width,height}" :src="cSrc" :mode="mode"></image>
+		<view v-else style="background-color: #f5f5f5; display: flex; justify-content: center; align-items: center;" :style="{width,height}">
+			<uni-icons color="#999999" size="30" type="person-filled" />
+		</view>
 	</view>
 </template>
 
@@ -46,15 +49,13 @@
 		watch: {
 			src:{
 				handler(src) {
-					if (src&&src.substring(0, 8) == "cloud://") {
-						uniCloud.getTempFileURL({
-							fileList: [src]
-						}).then(res=>{
-							this.cSrc = res.fileList[0].tempFileURL
-						})
-					}else{
-						this.cSrc = src
+					if(!src) {
+						this.cSrc = '';
+						return;
 					}
+					
+					// 直接使用提供的URL，不做云处理
+					this.cSrc = src;
 				},
 				immediate: true
 			}
