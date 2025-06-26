@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "uni-id-pages-agreements": "../../components/uni-id-pages-agreements/uni-id-pages-agreements"
+  }
+}
